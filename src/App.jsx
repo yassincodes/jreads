@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 const App = () => {
   const books = [
@@ -63,8 +63,15 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState('asc');
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Count books by shelf
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const shelfCounts = useMemo(() => {
     const counts = { all: books.length };
     books.forEach(book => {
@@ -75,247 +82,155 @@ const App = () => {
 
   const getStars = (rating) => {
     const fullStars = Math.floor(parseFloat(rating));
-    const emptyStars = 5 - fullStars;
-    return '★'.repeat(fullStars) + '☆'.repeat(emptyStars);
+    return '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
   };
 
   const filteredAndSortedBooks = useMemo(() => {
     let filtered = books.filter(book => {
       const shelfMatch = currentShelf === 'all' || book.shelf === currentShelf;
-      
       let ratingMatch = true;
       if (currentRatingFilter !== 'all') {
-        const bookRating = Math.round(parseFloat(book.rating));
-        ratingMatch = bookRating === parseInt(currentRatingFilter);
+        ratingMatch = Math.round(parseFloat(book.rating)) === parseInt(currentRatingFilter);
       }
-      
       const searchMatch = searchTerm === '' || 
         book.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
         book.author.toLowerCase().includes(searchTerm.toLowerCase());
-      
       return shelfMatch && ratingMatch && searchMatch;
     });
 
     filtered.sort((a, b) => {
       let comparison = 0;
-      
-      if (sortBy === 'title') {
-        comparison = a.title.localeCompare(b.title);
-      } else if (sortBy === 'author') {
-        comparison = a.author.localeCompare(b.author);
-      } else if (sortBy === 'rating') {
-        comparison = parseFloat(a.rating) - parseFloat(b.rating);
-      } else if (sortBy === 'price') {
-        const priceA = parseFloat(a.price.replace('$', ''));
-        const priceB = parseFloat(b.price.replace('$', ''));
-        comparison = priceA - priceB;
-      }
-      
+      if (sortBy === 'title') comparison = a.title.localeCompare(b.title);
+      else if (sortBy === 'author') comparison = a.author.localeCompare(b.author);
+      else if (sortBy === 'rating') comparison = parseFloat(a.rating) - parseFloat(b.rating);
+      else if (sortBy === 'price') comparison = parseFloat(a.price.replace('$', '')) - parseFloat(b.price.replace('$', ''));
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
   }, [currentShelf, currentRatingFilter, searchTerm, sortBy, sortOrder]);
 
-  const shelfCategories = [
-    { name: 'All', value: 'all' },
-    { name: 'Mathematics', value: 'mathematics' },
-    { name: 'Politics', value: 'politics' },
-    { name: 'Science', value: 'science' },
-    { name: 'Biography', value: 'biography' },
-    { name: 'Business', value: 'business' },
-    { name: 'Philosophy', value: 'philosophy' },
-    { name: 'Fiction', value: 'fiction' },
-  ];
-
-  const ratingFilters = [
-    { name: 'All Ratings', value: 'all' },
-    { name: '★★★★★ (5 stars)', value: '5' },
-    { name: '★★★★☆ (4 stars)', value: '4' },
-    { name: '★★★☆☆ (3 stars)', value: '3' },
-  ];
+  const s = {
+    body: { margin: 0, padding: 0, fontFamily: '"Lato", "Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f4f1ea', color: '#333', minHeight: '100vh' },
+    header: { backgroundColor: '#f4f1ea', borderBottom: '1px solid #d8d8d8', padding: '10px 0' },
+    headerContainer: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '30px', flexWrap: 'wrap' },
+    logo: { fontSize: isMobile ? '20px' : '28px', fontFamily: '"Merriweather", Georgia, serif', color: '#382110', textDecoration: 'none', fontStyle: 'italic' },
+    nav: { display: isMobile ? 'none' : 'flex', gap: '25px' },
+    navLink: { color: '#333', textDecoration: 'none', fontSize: '14px' },
+    searchBox: { marginLeft: isMobile ? '0' : 'auto', flex: isMobile ? '1' : 'initial' },
+    searchInput: { padding: '8px 12px', border: '1px solid #d8d8d8', borderRadius: '3px', width: isMobile ? '100%' : '300px', fontSize: '14px' },
+    profileContainer: { display: 'flex', alignItems: 'center', marginLeft: '15px' },
+    profileImage: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #d8d8d8', cursor: 'pointer' },
+    container: { maxWidth: '1200px', margin: '30px auto', padding: '0 20px', display: 'flex', gap: '30px', flexDirection: isMobile ? 'column' : 'row' },
+    sidebar: { width: isMobile ? '100%' : '250px', flexShrink: 0 },
+    pageTitle: { fontSize: isMobile ? '18px' : '24px', color: '#00635d', marginBottom: '20px', fontWeight: 'normal' },
+    shelfSection: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', padding: '15px', marginBottom: '20px' },
+    shelfSectionTitle: { fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', color: '#333' },
+    shelfList: { listStyle: 'none', padding: 0, margin: 0 },
+    shelfItem: { padding: '5px 0', fontSize: '14px', cursor: 'pointer', color: '#00635d' },
+    shelfItemActive: { fontWeight: 'bold' },
+    shelfCount: { color: '#999', fontSize: '12px' },
+    mainContent: { flex: 1 },
+    controls: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', padding: '15px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' },
+    controlLabel: { fontSize: '14px', color: '#333' },
+    controlSelect: { padding: '5px 10px', border: '1px solid #d8d8d8', borderRadius: '3px', fontSize: '14px' },
+    bookCount: { marginLeft: 'auto', fontSize: '14px', color: '#666' },
+    booksTable: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', overflow: 'hidden' },
+    table: { width: '100%', borderCollapse: 'collapse' },
+    thead: { backgroundColor: '#f4f1ea', borderBottom: '1px solid #d8d8d8' },
+    th: { padding: '12px', textAlign: 'left', fontSize: isMobile ? '10px' : '12px', fontWeight: 'bold', color: '#333' },
+    tr: { cursor: 'default' },
+    td: { padding: isMobile ? '10px 8px' : '15px 12px', borderBottom: '1px solid #f4f1ea', fontSize: isMobile ? '12px' : '14px', verticalAlign: 'top' },
+    bookCover: { width: isMobile ? '50px' : '60px', height: 'auto', borderRadius: '3px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+    bookTitle: { color: '#00635d', fontWeight: 'normal', textDecoration: 'none', fontSize: '14px', display: 'block', marginBottom: '5px' },
+    bookAuthor: { color: '#333', fontSize: '13px' },
+    stars: { color: '#ee8a00', fontSize: '14px', letterSpacing: '2px' },
+    ratingValue: { color: '#333', fontSize: '13px', marginLeft: '5px' },
+    shelfTag: { background: '#f4f1ea', padding: '3px 8px', borderRadius: '3px', fontSize: '12px', color: '#00635d', display: 'inline-block' },
+    price: { color: '#00635d', fontWeight: 'bold', fontSize: '14px' },
+    viewLink: { color: '#00635d', textDecoration: 'none', fontSize: '12px', display: 'inline-block', marginTop: '5px' },
+    noResults: { textAlign: 'center', padding: '40px', color: '#666', fontSize: '16px' },
+  };
 
   return (
-    <div style={styles.body}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerContainer}>
-          <a href="#" style={styles.logo}>jreads</a>
-          <nav style={styles.nav}>
-            <a href="#home" style={styles.navLink}>Home</a>
-            <a href="#my-books" style={styles.navLink}>My Books</a>
-            <a href="#browse" style={styles.navLink}>Browse</a>
-            <a href="#community" style={styles.navLink}>Community</a>
+    <div style={s.body}>
+      <header style={s.header}>
+        <div style={s.headerContainer}>
+          <a href="#" style={s.logo}>jreads</a>
+          <nav style={s.nav}>
+            <a href="#home" style={s.navLink}>Home</a>
+            <a href="#my-books" style={s.navLink}>My Books</a>
+            <a href="#browse" style={s.navLink}>Browse</a>
+            <a href="#community" style={s.navLink}>Community</a>
           </nav>
-          <div style={styles.searchBox}>
-            <input 
-              type="text" 
-              placeholder="Search books" 
-              style={styles.searchInput}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          <div style={s.searchBox}>
+            <input type="text" placeholder="Search books" style={s.searchInput} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <div style={styles.profileContainer}>
-            <img 
-              src="https://www.jmail.world/profile.png" 
-              alt="Profile" 
-              style={styles.profileImage}
-            />
+          <div style={s.profileContainer}>
+            <img src="https://www.jmail.world/profile.png" alt="Profile" style={s.profileImage} />
           </div>
         </div>
       </header>
-
-      {/* Main Container */}
-      <div style={styles.container}>
-        {/* Sidebar */}
-        <aside style={styles.sidebar}>
-          <h1 style={styles.pageTitle}>
-            My Books: <span>{currentShelf === 'all' ? 'All' : currentShelf}</span> ({filteredAndSortedBooks.length})
-          </h1>
-          
-          <div style={styles.shelfSection}>
-            <h3 style={styles.shelfSectionTitle}>Bookshelves</h3>
-            <ul style={styles.shelfList}>
-              {shelfCategories.map(shelf => (
-                <li 
-                  key={shelf.value}
-                  style={{
-                    ...styles.shelfItem,
-                    ...(currentShelf === shelf.value ? styles.shelfItemActive : {})
-                  }}
-                  onClick={() => setCurrentShelf(shelf.value)}
-                >
-                  {shelf.name} <span style={styles.shelfCount}>({shelfCounts[shelf.value] || 0})</span>
+      <div style={s.container}>
+        <aside style={s.sidebar}>
+          <h1 style={s.pageTitle}>My Books: <span>{currentShelf === 'all' ? 'All' : currentShelf}</span> ({filteredAndSortedBooks.length})</h1>
+          <div style={s.shelfSection}>
+            <h3 style={s.shelfSectionTitle}>Bookshelves</h3>
+            <ul style={s.shelfList}>
+              {[
+                { name: 'All', value: 'all' }, { name: 'Mathematics', value: 'mathematics' }, { name: 'Politics', value: 'politics' },
+                { name: 'Science', value: 'science' }, { name: 'Biography', value: 'biography' }, { name: 'Business', value: 'business' },
+                { name: 'Philosophy', value: 'philosophy' }, { name: 'Fiction', value: 'fiction' }
+              ].map(shelf => (
+                <li key={shelf.value} style={{...s.shelfItem, ...(currentShelf === shelf.value ? s.shelfItemActive : {})}} onClick={() => setCurrentShelf(shelf.value)}>
+                  {shelf.name} <span style={s.shelfCount}>({shelfCounts[shelf.value] || 0})</span>
                 </li>
               ))}
             </ul>
           </div>
-
-          <div style={styles.shelfSection}>
-            <h3 style={styles.shelfSectionTitle}>Filter by Rating</h3>
-            <ul style={styles.shelfList}>
-              {ratingFilters.map(rating => (
-                <li 
-                  key={rating.value}
-                  style={{
-                    ...styles.shelfItem,
-                    ...(currentRatingFilter === rating.value ? styles.shelfItemActive : {})
-                  }}
-                  onClick={() => setCurrentRatingFilter(rating.value)}
-                >
+          <div style={s.shelfSection}>
+            <h3 style={s.shelfSectionTitle}>Filter by Rating</h3>
+            <ul style={s.shelfList}>
+              {[
+                { name: 'All Ratings', value: 'all' }, { name: '★★★★★ (5 stars)', value: '5' },
+                { name: '★★★★☆ (4 stars)', value: '4' }, { name: '★★★☆☆ (3 stars)', value: '3' }
+              ].map(rating => (
+                <li key={rating.value} style={{...s.shelfItem, ...(currentRatingFilter === rating.value ? s.shelfItemActive : {})}} onClick={() => setCurrentRatingFilter(rating.value)}>
                   {rating.name}
                 </li>
               ))}
             </ul>
           </div>
         </aside>
-
-        {/* Main Content */}
-        <main style={styles.mainContent}>
-          <div style={styles.controls}>
-            <label style={styles.controlLabel}>per page</label>
-            <select style={styles.controlSelect}>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+        <main style={s.mainContent}>
+          <div style={s.controls}>
+            <label style={s.controlLabel}>per page</label>
+            <select style={s.controlSelect}><option>20</option><option>50</option><option>100</option></select>
+            <label style={s.controlLabel}>sort</label>
+            <select style={s.controlSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="title">Title</option><option value="author">Author</option><option value="rating">Rating</option><option value="price">Price</option>
             </select>
-
-            <label style={styles.controlLabel}>sort</label>
-            <select 
-              style={styles.controlSelect}
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-            >
-              <option value="title">Title</option>
-              <option value="author">Author</option>
-              <option value="rating">Rating</option>
-              <option value="price">Price</option>
-            </select>
-
-            <label style={styles.controlLabel}>
-              <input 
-                type="radio" 
-                name="order" 
-                value="asc" 
-                checked={sortOrder === 'asc'}
-                onChange={(e) => setSortOrder(e.target.value)}
-              /> asc
-            </label>
-            <label style={styles.controlLabel}>
-              <input 
-                type="radio" 
-                name="order" 
-                value="desc" 
-                checked={sortOrder === 'desc'}
-                onChange={(e) => setSortOrder(e.target.value)}
-              /> desc
-            </label>
-
-            <div style={styles.bookCount}>
-              Showing <span>{filteredAndSortedBooks.length}</span> books
-            </div>
+            <label style={s.controlLabel}><input type="radio" name="order" value="asc" checked={sortOrder === 'asc'} onChange={(e) => setSortOrder(e.target.value)} /> asc</label>
+            <label style={s.controlLabel}><input type="radio" name="order" value="desc" checked={sortOrder === 'desc'} onChange={(e) => setSortOrder(e.target.value)} /> desc</label>
+            <div style={s.bookCount}>Showing {filteredAndSortedBooks.length} books</div>
           </div>
-
-          <div style={styles.booksTable}>
+          <div style={s.booksTable}>
             {filteredAndSortedBooks.length === 0 ? (
-              <div style={styles.noResults}>
-                No books found matching your filters.
-              </div>
+              <div style={s.noResults}>No books found matching your filters.</div>
             ) : (
-              <table style={styles.table}>
-                <thead style={styles.thead}>
-                  <tr>
-                    <th style={{...styles.th, width: '80px'}}>cover</th>
-                    <th style={styles.th}>title</th>
-                    <th style={styles.th}>author</th>
-                    <th style={{...styles.th, width: '120px'}}>rating</th>
-                    <th style={{...styles.th, width: '100px'}}>shelves</th>
-                    <th style={styles.th}>price</th>
-                  </tr>
+              <table style={s.table}>
+                <thead style={s.thead}>
+                  <tr><th style={{...s.th, width: '80px'}}>cover</th><th style={s.th}>title</th><th style={s.th}>author</th><th style={{...s.th, width: '120px'}}>rating</th><th style={{...s.th, width: '100px'}}>shelves</th><th style={s.th}>price</th></tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedBooks.map((book, index) => (
-                    <tr key={index} style={styles.tr}>
-                      <td style={styles.td}>
-                        <img 
-                          src={book.image} 
-                          alt={book.title} 
-                          style={styles.bookCover}
-                          onError={(e) => {
-                            e.target.src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2280%22%3E%3Crect fill=%22%23ddd%22 width=%2260%22 height=%2280%22/%3E%3C/svg%3E';
-                          }}
-                        />
-                      </td>
-                      <td style={styles.td}>
-                        <a 
-                          href={book.amazon_link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={styles.bookTitle}
-                        >
-                          {book.title}
-                        </a>
-                      </td>
-                      <td style={{...styles.td, ...styles.bookAuthor}}>{book.author}</td>
-                      <td style={styles.td}>
-                        <span style={styles.stars}>{getStars(book.rating)}</span>
-                        <span style={styles.ratingValue}> {book.rating}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.shelfTag}>{book.shelf}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.price}>{book.price}</div>
-                        <a 
-                          href={book.amazon_link} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={styles.viewLink}
-                        >
-                          View on Amazon
-                        </a>
-                      </td>
+                  {filteredAndSortedBooks.map((book, idx) => (
+                    <tr key={idx} style={s.tr}>
+                      <td style={s.td}><img src={book.image} alt={book.title} style={s.bookCover} /></td>
+                      <td style={s.td}><a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.bookTitle}>{book.title}</a></td>
+                      <td style={{...s.td, ...s.bookAuthor}}>{book.author}</td>
+                      <td style={s.td}><span style={s.stars}>{getStars(book.rating)}</span><span style={s.ratingValue}> {book.rating}</span></td>
+                      <td style={s.td}><span style={s.shelfTag}>{book.shelf}</span></td>
+                      <td style={s.td}><div style={s.price}>{book.price}</div><a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.viewLink}>View on Amazon</a></td>
                     </tr>
                   ))}
                 </tbody>
@@ -326,231 +241,6 @@ const App = () => {
       </div>
     </div>
   );
-};
-
-const styles = {
-  body: {
-    margin: 0,
-    padding: 0,
-    fontFamily: '"Lato", "Helvetica Neue", Helvetica, Arial, sans-serif',
-    backgroundColor: '#f4f1ea',
-    color: '#333',
-    minHeight: '100vh',
-  },
-  header: {
-    backgroundColor: '#f4f1ea',
-    borderBottom: '1px solid #d8d8d8',
-    padding: '10px 0',
-  },
-  headerContainer: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '0 20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '30px',
-  },
-  logo: {
-    fontSize: '28px',
-    fontFamily: '"Merriweather", Georgia, serif',
-    color: '#382110',
-    textDecoration: 'none',
-    fontStyle: 'italic',
-  },
-  nav: {
-    display: 'flex',
-    gap: '25px',
-  },
-  navLink: {
-    color: '#333',
-    textDecoration: 'none',
-    fontSize: '14px',
-  },
-  searchBox: {
-    marginLeft: 'auto',
-  },
-  searchInput: {
-    padding: '8px 12px',
-    border: '1px solid #d8d8d8',
-    borderRadius: '3px',
-    width: '300px',
-    fontSize: '14px',
-  },
-  profileContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    marginLeft: '15px',
-  },
-  profileImage: {
-    width: '40px',
-    height: '40px',
-    borderRadius: '50%',
-    objectFit: 'cover',
-    border: '2px solid #d8d8d8',
-    cursor: 'pointer',
-    transition: 'border-color 0.2s',
-  },
-  container: {
-    maxWidth: '1200px',
-    margin: '30px auto',
-    padding: '0 20px',
-    display: 'flex',
-    gap: '30px',
-  },
-  sidebar: {
-    width: '250px',
-    flexShrink: 0,
-  },
-  pageTitle: {
-    fontSize: '24px',
-    color: '#00635d',
-    marginBottom: '20px',
-    fontWeight: 'normal',
-  },
-  shelfSection: {
-    background: 'white',
-    border: '1px solid #d8d8d8',
-    borderRadius: '3px',
-    padding: '15px',
-    marginBottom: '20px',
-  },
-  shelfSectionTitle: {
-    fontSize: '14px',
-    fontWeight: 'bold',
-    marginBottom: '10px',
-    color: '#333',
-  },
-  shelfList: {
-    listStyle: 'none',
-    padding: 0,
-    margin: 0,
-  },
-  shelfItem: {
-    padding: '5px 0',
-    fontSize: '14px',
-    cursor: 'pointer',
-    color: '#00635d',
-  },
-  shelfItemActive: {
-    fontWeight: 'bold',
-  },
-  shelfCount: {
-    color: '#999',
-    fontSize: '12px',
-  },
-  mainContent: {
-    flex: 1,
-  },
-  controls: {
-    background: 'white',
-    border: '1px solid #d8d8d8',
-    borderRadius: '3px',
-    padding: '15px',
-    marginBottom: '20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-    flexWrap: 'wrap',
-  },
-  controlLabel: {
-    fontSize: '14px',
-    color: '#333',
-  },
-  controlSelect: {
-    padding: '5px 10px',
-    border: '1px solid #d8d8d8',
-    borderRadius: '3px',
-    fontSize: '14px',
-  },
-  bookCount: {
-    marginLeft: 'auto',
-    fontSize: '14px',
-    color: '#666',
-  },
-  booksTable: {
-    background: 'white',
-    border: '1px solid #d8d8d8',
-    borderRadius: '3px',
-    overflow: 'hidden',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-  },
-  thead: {
-    backgroundColor: '#f4f1ea',
-    borderBottom: '1px solid #d8d8d8',
-  },
-  th: {
-    padding: '12px',
-    textAlign: 'left',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  tr: {
-    cursor: 'default',
-  },
-  td: {
-    padding: '15px 12px',
-    borderBottom: '1px solid #f4f1ea',
-    fontSize: '14px',
-    verticalAlign: 'top',
-  },
-  bookCover: {
-    width: '60px',
-    height: 'auto',
-    borderRadius: '3px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-  },
-  bookTitle: {
-    color: '#00635d',
-    fontWeight: 'normal',
-    textDecoration: 'none',
-    fontSize: '14px',
-    display: 'block',
-    marginBottom: '5px',
-  },
-  bookAuthor: {
-    color: '#333',
-    fontSize: '13px',
-  },
-  stars: {
-    color: '#ee8a00',
-    fontSize: '14px',
-    letterSpacing: '2px',
-  },
-  ratingValue: {
-    color: '#333',
-    fontSize: '13px',
-    marginLeft: '5px',
-  },
-  shelfTag: {
-    background: '#f4f1ea',
-    padding: '3px 8px',
-    borderRadius: '3px',
-    fontSize: '12px',
-    color: '#00635d',
-    display: 'inline-block',
-  },
-  price: {
-    color: '#00635d',
-    fontWeight: 'bold',
-    fontSize: '14px',
-  },
-  viewLink: {
-    color: '#00635d',
-    textDecoration: 'none',
-    fontSize: '12px',
-    display: 'inline-block',
-    marginTop: '5px',
-  },
-  noResults: {
-    textAlign: 'center',
-    padding: '40px',
-    color: '#666',
-    fontSize: '16px',
-  },
 };
 
 export default App;

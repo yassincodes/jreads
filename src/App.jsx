@@ -63,174 +63,458 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('title');
   const [sortOrder, setSortOrder] = useState('asc');
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
-    handleResize();
     window.addEventListener('resize', handleResize);
+    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const shelfCounts = useMemo(() => {
     const counts = { all: books.length };
-    books.forEach(book => {
+    books.forEach((book) => {
       counts[book.shelf] = (counts[book.shelf] || 0) + 1;
     });
     return counts;
   }, []);
 
   const getStars = (rating) => {
-    const fullStars = Math.floor(parseFloat(rating));
-    return '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
+    const full = Math.floor(parseFloat(rating));
+    return '★'.repeat(full) + '☆'.repeat(5 - full);
   };
 
   const filteredAndSortedBooks = useMemo(() => {
-    let filtered = books.filter(book => {
+    let filtered = books.filter((book) => {
       const shelfMatch = currentShelf === 'all' || book.shelf === currentShelf;
-      let ratingMatch = true;
-      if (currentRatingFilter !== 'all') {
-        ratingMatch = Math.round(parseFloat(book.rating)) === parseInt(currentRatingFilter);
-      }
-      const searchMatch = searchTerm === '' || 
-        book.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const ratingMatch =
+        currentRatingFilter === 'all' ||
+        Math.round(parseFloat(book.rating)) === Number(currentRatingFilter);
+      const searchMatch =
+        !searchTerm ||
+        book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase());
       return shelfMatch && ratingMatch && searchMatch;
     });
 
     filtered.sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === 'title') comparison = a.title.localeCompare(b.title);
-      else if (sortBy === 'author') comparison = a.author.localeCompare(b.author);
-      else if (sortBy === 'rating') comparison = parseFloat(a.rating) - parseFloat(b.rating);
-      else if (sortBy === 'price') comparison = parseFloat(a.price.replace('$', '')) - parseFloat(b.price.replace('$', ''));
-      return sortOrder === 'asc' ? comparison : -comparison;
+      let valA, valB;
+      if (sortBy === 'title') [valA, valB] = [a.title, b.title];
+      else if (sortBy === 'author') [valA, valB] = [a.author, b.author];
+      else if (sortBy === 'rating') [valA, valB] = [parseFloat(a.rating), parseFloat(b.rating)];
+      else if (sortBy === 'price')
+        [valA, valB] = [
+          parseFloat(a.price.replace('$', '')),
+          parseFloat(b.price.replace('$', '')),
+        ];
+
+      if (typeof valA === 'string') return valA.localeCompare(valB);
+      return valA - valB;
     });
 
+    if (sortOrder === 'desc') filtered.reverse();
     return filtered;
-  }, [currentShelf, currentRatingFilter, searchTerm, sortBy, sortOrder]);
+  }, [currentShelf, currentRatingFilter, searchTerm, sortBy, sortOrder, books]);
 
+  // ────────────────────────────────────────────────
+  //                   STYLES (same as before)
+  // ────────────────────────────────────────────────
   const s = {
-    body: { margin: 0, padding: 0, fontFamily: '"Lato", "Helvetica Neue", Helvetica, Arial, sans-serif', backgroundColor: '#f4f1ea', color: '#333', minHeight: '100vh' },
-    header: { backgroundColor: '#f4f1ea', borderBottom: '1px solid #d8d8d8', padding: '10px 0' },
-    headerContainer: { maxWidth: '1200px', margin: '0 auto', padding: '0 20px', display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '30px', flexWrap: 'wrap' },
-    logo: { fontSize: isMobile ? '20px' : '28px', fontFamily: '"Merriweather", Georgia, serif', color: '#382110', textDecoration: 'none', fontStyle: 'italic' },
-    nav: { display: isMobile ? 'none' : 'flex', gap: '25px' },
-    navLink: { color: '#333', textDecoration: 'none', fontSize: '14px' },
-    searchBox: { marginLeft: isMobile ? '0' : 'auto', flex: isMobile ? '1' : 'initial' },
-    searchInput: { padding: '8px 12px', border: '1px solid #d8d8d8', borderRadius: '3px', width: isMobile ? '100%' : '300px', fontSize: '14px' },
-    profileContainer: { display: 'flex', alignItems: 'center', marginLeft: '15px' },
-    profileImage: { width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #d8d8d8', cursor: 'pointer' },
-    container: { maxWidth: '1200px', margin: '30px auto', padding: '0 20px', display: 'flex', gap: '30px', flexDirection: isMobile ? 'column' : 'row' },
-    sidebar: { width: isMobile ? '100%' : '250px', flexShrink: 0 },
-    pageTitle: { fontSize: isMobile ? '18px' : '24px', color: '#00635d', marginBottom: '20px', fontWeight: 'normal' },
-    shelfSection: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', padding: '15px', marginBottom: '20px' },
-    shelfSectionTitle: { fontSize: '14px', fontWeight: 'bold', marginBottom: '10px', color: '#333' },
-    shelfList: { listStyle: 'none', padding: 0, margin: 0 },
-    shelfItem: { padding: '5px 0', fontSize: '14px', cursor: 'pointer', color: '#00635d' },
-    shelfItemActive: { fontWeight: 'bold' },
-    shelfCount: { color: '#999', fontSize: '12px' },
-    mainContent: { flex: 1 },
-    controls: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', padding: '15px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' },
-    controlLabel: { fontSize: '14px', color: '#333' },
-    controlSelect: { padding: '5px 10px', border: '1px solid #d8d8d8', borderRadius: '3px', fontSize: '14px' },
-    bookCount: { marginLeft: 'auto', fontSize: '14px', color: '#666' },
-    booksTable: { background: 'white', border: '1px solid #d8d8d8', borderRadius: '3px', overflow: 'hidden' },
-    table: { width: '100%', borderCollapse: 'collapse' },
-    thead: { backgroundColor: '#f4f1ea', borderBottom: '1px solid #d8d8d8' },
-    th: { padding: '12px', textAlign: 'left', fontSize: isMobile ? '10px' : '12px', fontWeight: 'bold', color: '#333' },
-    tr: { cursor: 'default' },
-    td: { padding: isMobile ? '10px 8px' : '15px 12px', borderBottom: '1px solid #f4f1ea', fontSize: isMobile ? '12px' : '14px', verticalAlign: 'top' },
-    bookCover: { width: isMobile ? '50px' : '60px', height: 'auto', borderRadius: '3px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-    bookTitle: { color: '#00635d', fontWeight: 'normal', textDecoration: 'none', fontSize: '14px', display: 'block', marginBottom: '5px' },
-    bookAuthor: { color: '#333', fontSize: '13px' },
-    stars: { color: '#ee8a00', fontSize: '14px', letterSpacing: '2px' },
-    ratingValue: { color: '#333', fontSize: '13px', marginLeft: '5px' },
-    shelfTag: { background: '#f4f1ea', padding: '3px 8px', borderRadius: '3px', fontSize: '12px', color: '#00635d', display: 'inline-block' },
-    price: { color: '#00635d', fontWeight: 'bold', fontSize: '14px' },
-    viewLink: { color: '#00635d', textDecoration: 'none', fontSize: '12px', display: 'inline-block', marginTop: '5px' },
-    noResults: { textAlign: 'center', padding: '40px', color: '#666', fontSize: '16px' },
+    body: {
+      margin: 0,
+      fontFamily: '"Segoe UI", system-ui, sans-serif',
+      background: '#f8f6f2',
+      color: '#2d2d2d',
+      minHeight: '100vh',
+    },
+    header: {
+      background: '#fdfcfb',
+      borderBottom: '1px solid #e5e1db',
+      padding: '0.8rem 0',
+      position: 'sticky',
+      top: 0,
+      zIndex: 10,
+    },
+    headerContainer: {
+      maxWidth: '1400px',
+      margin: '0 auto',
+      padding: '0 1rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '1.5rem',
+      flexWrap: 'wrap',
+    },
+    logo: {
+      fontSize: 'clamp(1.4rem, 5vw, 1.9rem)',
+      fontFamily: '"Georgia", serif',
+      color: '#1a3c34',
+      fontStyle: 'italic',
+      fontWeight: 600,
+      textDecoration: 'none',
+    },
+    searchBox: {
+      flex: '1 1 280px',
+      minWidth: '220px',
+    },
+    searchInput: {
+      width: '100%',
+      padding: '0.7rem 1rem',
+      border: '1px solid #d5d0c9',
+      borderRadius: '6px',
+      fontSize: '1rem',
+    },
+    profileImage: {
+      width: '44px',
+      height: '44px',
+      borderRadius: '50%',
+      objectFit: 'cover',
+      border: '2px solid #d5d0c9',
+    },
+    container: {
+      maxWidth: '1400px',
+      margin: '2rem auto',
+      padding: '0 1rem',
+      display: 'flex',
+      gap: '2rem',
+      flexDirection: isMobile ? 'column' : 'row',
+    },
+    sidebar: {
+      width: isMobile ? '100%' : '260px',
+      flexShrink: 0,
+    },
+    pageTitle: {
+      fontSize: 'clamp(1.4rem, 4.5vw, 1.8rem)',
+      color: '#1a3c34',
+      margin: '0 0 1.5rem 0',
+    },
+    section: {
+      background: '#fff',
+      border: '1px solid #e5e1db',
+      borderRadius: '8px',
+      padding: '1.25rem',
+      marginBottom: '1.5rem',
+    },
+    sectionTitle: {
+      margin: '0 0 0.9rem 0',
+      fontSize: '0.95rem',
+      fontWeight: 600,
+      color: '#444',
+    },
+    list: {
+      listStyle: 'none',
+      padding: 0,
+      margin: 0,
+    },
+    listItem: {
+      padding: '0.5rem 0',
+      cursor: 'pointer',
+      color: '#1a3c34',
+      fontSize: '0.97rem',
+    },
+    listItemActive: {
+      fontWeight: 600,
+      color: '#00635d',
+    },
+    count: {
+      color: '#888',
+      fontSize: '0.85rem',
+      marginLeft: '0.4rem',
+    },
+    main: { flex: 1 },
+    controls: {
+      background: '#fff',
+      border: '1px solid #e5e1db',
+      borderRadius: '8px',
+      padding: '1rem',
+      marginBottom: '1.5rem',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '1rem',
+      alignItems: 'center',
+      fontSize: '0.95rem',
+    },
+    select: {
+      padding: '0.5rem 0.8rem',
+      border: '1px solid #d5d0c9',
+      borderRadius: '6px',
+      background: '#fff',
+    },
+    radioLabel: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.4rem',
+      whiteSpace: 'nowrap',
+    },
+    bookCount: {
+      marginLeft: 'auto',
+      color: '#555',
+      fontSize: '0.95rem',
+    },
+    listContainer: {
+      background: '#fff',
+      border: '1px solid #e5e1db',
+      borderRadius: '8px',
+      overflow: 'hidden',
+    },
+    table: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      display: isMobile ? 'none' : 'table',
+    },
+    mobileCards: {
+      display: isMobile ? 'block' : 'none',
+    },
+    card: {
+      padding: '1rem',
+      borderBottom: '1px solid #f0ece5',
+      display: 'flex',
+      gap: '1rem',
+      background: '#fff',
+    },
+    cardCover: {
+      width: '70px',
+      flexShrink: 0,
+      borderRadius: '6px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+    },
+    cardContent: { flex: 1 },
+    bookTitle: {
+      color: '#00635d',
+      fontWeight: 500,
+      fontSize: '1.05rem',
+      margin: '0 0 0.35rem 0',
+      textDecoration: 'none',
+      display: 'block',
+    },
+    bookAuthor: {
+      color: '#444',
+      fontSize: '0.92rem',
+      marginBottom: '0.4rem',
+    },
+    stars: {
+      color: '#f39c12',
+      fontSize: '1.1rem',
+      letterSpacing: '1px',
+    },
+    shelfTag: {
+      background: '#e8f5f3',
+      color: '#00635d',
+      padding: '0.25rem 0.6rem',
+      borderRadius: '12px',
+      fontSize: '0.82rem',
+      marginRight: '0.6rem',
+    },
+    price: {
+      fontWeight: 600,
+      color: '#00635d',
+      fontSize: '1.05rem',
+      margin: '0.6rem 0 0.3rem 0',
+    },
+    viewLink: {
+      color: '#00635d',
+      fontSize: '0.88rem',
+      textDecoration: 'none',
+    },
+    th: {
+      padding: '0.9rem 1rem',
+      textAlign: 'left',
+      background: '#f8f6f2',
+      fontSize: '0.88rem',
+      fontWeight: 600,
+      color: '#444',
+      whiteSpace: 'nowrap',
+    },
+    td: {
+      padding: '1rem',
+      borderBottom: '1px solid #f0ece5',
+      verticalAlign: 'middle',
+      fontSize: '0.96rem',
+    },
+    noResults: {
+      padding: '4rem 1.5rem',
+      textAlign: 'center',
+      color: '#777',
+      fontSize: '1.1rem',
+    },
   };
 
   return (
     <div style={s.body}>
       <header style={s.header}>
         <div style={s.headerContainer}>
-          <a href="#" style={s.logo}>jreads</a>
-          <nav style={s.nav}>
-            <a href="#home" style={s.navLink}>Home</a>
-            <a href="#my-books" style={s.navLink}>My Books</a>
-            <a href="#browse" style={s.navLink}>Browse</a>
-            <a href="#community" style={s.navLink}>Community</a>
-          </nav>
+          <a href="#" style={s.logo}>
+            jreads
+          </a>
+
           <div style={s.searchBox}>
-            <input type="text" placeholder="Search books" style={s.searchInput} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input
+              type="search"
+              placeholder="Search title or author…"
+              style={s.searchInput}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <div style={s.profileContainer}>
-            <img src="https://www.jmail.world/profile.png" alt="Profile" style={s.profileImage} />
-          </div>
+
+          <img src="https://www.jmail.world/profile.png" alt="Profile" style={s.profileImage} />
         </div>
       </header>
+
       <div style={s.container}>
         <aside style={s.sidebar}>
-          <h1 style={s.pageTitle}>My Books: <span>{currentShelf === 'all' ? 'All' : currentShelf}</span> ({filteredAndSortedBooks.length})</h1>
-          <div style={s.shelfSection}>
-            <h3 style={s.shelfSectionTitle}>Bookshelves</h3>
-            <ul style={s.shelfList}>
-              {[
-                { name: 'All', value: 'all' }, { name: 'Mathematics', value: 'mathematics' }, { name: 'Politics', value: 'politics' },
-                { name: 'Science', value: 'science' }, { name: 'Biography', value: 'biography' }, { name: 'Business', value: 'business' },
-                { name: 'Philosophy', value: 'philosophy' }, { name: 'Fiction', value: 'fiction' }
-              ].map(shelf => (
-                <li key={shelf.value} style={{...s.shelfItem, ...(currentShelf === shelf.value ? s.shelfItemActive : {})}} onClick={() => setCurrentShelf(shelf.value)}>
-                  {shelf.name} <span style={s.shelfCount}>({shelfCounts[shelf.value] || 0})</span>
-                </li>
-              ))}
+          <h1 style={s.pageTitle}>
+            My Books — {currentShelf === 'all' ? 'All' : currentShelf.charAt(0).toUpperCase() + currentShelf.slice(1)}
+          </h1>
+
+          <div style={s.section}>
+            <h3 style={s.sectionTitle}>Bookshelves</h3>
+            <ul style={s.list}>
+              {['all', 'mathematics', 'politics', 'science', 'biography', 'business', 'philosophy', 'fiction', 'other', 'parenting', 'writing', 'history', 'architecture', 'music', 'psychology', 'medicine'].map(
+                (val) => {
+                  const name = val === 'all' ? 'All' : val.charAt(0).toUpperCase() + val.slice(1);
+                  return (
+                    <li
+                      key={val}
+                      style={{
+                        ...s.listItem,
+                        ...(currentShelf === val ? s.listItemActive : {}),
+                      }}
+                      onClick={() => setCurrentShelf(val)}
+                    >
+                      {name} <span style={s.count}>({shelfCounts[val] || 0})</span>
+                    </li>
+                  );
+                }
+              )}
             </ul>
           </div>
-          <div style={s.shelfSection}>
-            <h3 style={s.shelfSectionTitle}>Filter by Rating</h3>
-            <ul style={s.shelfList}>
-              {[
-                { name: 'All Ratings', value: 'all' }, { name: '★★★★★ (5 stars)', value: '5' },
-                { name: '★★★★☆ (4 stars)', value: '4' }, { name: '★★★☆☆ (3 stars)', value: '3' }
-              ].map(rating => (
-                <li key={rating.value} style={{...s.shelfItem, ...(currentRatingFilter === rating.value ? s.shelfItemActive : {})}} onClick={() => setCurrentRatingFilter(rating.value)}>
-                  {rating.name}
+
+          <div style={s.section}>
+            <h3 style={s.sectionTitle}>Rating</h3>
+            <ul style={s.list}>
+              {['all', '5', '4', '3'].map((val) => (
+                <li
+                  key={val}
+                  style={{
+                    ...s.listItem,
+                    ...(currentRatingFilter === val ? s.listItemActive : {}),
+                  }}
+                  onClick={() => setCurrentRatingFilter(val)}
+                >
+                  {val === 'all' ? 'All Ratings' : '★'.repeat(Number(val)) + '☆'.repeat(5 - Number(val))}
                 </li>
               ))}
             </ul>
           </div>
         </aside>
-        <main style={s.mainContent}>
+
+        <main style={s.main}>
           <div style={s.controls}>
-            <label style={s.controlLabel}>per page</label>
-            <select style={s.controlSelect}><option>20</option><option>50</option><option>100</option></select>
-            <label style={s.controlLabel}>sort</label>
-            <select style={s.controlSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="title">Title</option><option value="author">Author</option><option value="rating">Rating</option><option value="price">Price</option>
+            <label>Sort by</label>
+            <select style={s.select} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="rating">Rating</option>
+              <option value="price">Price</option>
             </select>
-            <label style={s.controlLabel}><input type="radio" name="order" value="asc" checked={sortOrder === 'asc'} onChange={(e) => setSortOrder(e.target.value)} /> asc</label>
-            <label style={s.controlLabel}><input type="radio" name="order" value="desc" checked={sortOrder === 'desc'} onChange={(e) => setSortOrder(e.target.value)} /> desc</label>
+
+            <div style={{ display: 'flex', gap: '1.2rem' }}>
+              <label style={s.radioLabel}>
+                <input
+                  type="radio"
+                  name="order"
+                  value="asc"
+                  checked={sortOrder === 'asc'}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                />
+                Asc
+              </label>
+              <label style={s.radioLabel}>
+                <input
+                  type="radio"
+                  name="order"
+                  value="desc"
+                  checked={sortOrder === 'desc'}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                />
+                Desc
+              </label>
+            </div>
+
             <div style={s.bookCount}>Showing {filteredAndSortedBooks.length} books</div>
           </div>
-          <div style={s.booksTable}>
+
+          <div style={s.listContainer}>
             {filteredAndSortedBooks.length === 0 ? (
-              <div style={s.noResults}>No books found matching your filters.</div>
+              <div style={s.noResults}>No books match your filters.</div>
+            ) : isMobile ? (
+              <div style={s.mobileCards}>
+                {filteredAndSortedBooks.map((book, i) => (
+                  <div key={i} style={s.card}>
+                    <img src={book.image} alt={book.title} style={s.cardCover} loading="lazy" />
+                    <div style={s.cardContent}>
+                      <a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.bookTitle}>
+                        {book.title}
+                      </a>
+                      <div style={s.bookAuthor}>{book.author}</div>
+                      <div>
+                        <span style={s.stars}>{getStars(book.rating)}</span>
+                        <span style={{ marginLeft: '0.5rem', color: '#555' }}>{book.rating}</span>
+                      </div>
+                      <div style={{ margin: '0.5rem 0' }}>
+                        <span style={s.shelfTag}>{book.shelf}</span>
+                      </div>
+                      <div style={s.price}>{book.price}</div>
+                      <a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.viewLink}>
+                        View on Amazon →
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
               <table style={s.table}>
-                <thead style={s.thead}>
-                  <tr><th style={{...s.th, width: '80px'}}>cover</th><th style={s.th}>title</th><th style={s.th}>author</th><th style={{...s.th, width: '120px'}}>rating</th><th style={{...s.th, width: '100px'}}>shelves</th><th style={s.th}>price</th></tr>
+                <thead>
+                  <tr>
+                    <th style={{ ...s.th, width: '90px' }}>Cover</th>
+                    <th style={s.th}>Title</th>
+                    <th style={s.th}>Author</th>
+                    <th style={{ ...s.th, width: '140px' }}>Rating</th>
+                    <th style={{ ...s.th, width: '110px' }}>Shelf</th>
+                    <th style={{ ...s.th, width: '110px' }}>Price</th>
+                  </tr>
                 </thead>
                 <tbody>
-                  {filteredAndSortedBooks.map((book, idx) => (
-                    <tr key={idx} style={s.tr}>
-                      <td style={s.td}><img src={book.image} alt={book.title} style={s.bookCover} /></td>
-                      <td style={s.td}><a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.bookTitle}>{book.title}</a></td>
-                      <td style={{...s.td, ...s.bookAuthor}}>{book.author}</td>
-                      <td style={s.td}><span style={s.stars}>{getStars(book.rating)}</span><span style={s.ratingValue}> {book.rating}</span></td>
-                      <td style={s.td}><span style={s.shelfTag}>{book.shelf}</span></td>
-                      <td style={s.td}><div style={s.price}>{book.price}</div><a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.viewLink}>View on Amazon</a></td>
+                  {filteredAndSortedBooks.map((book, i) => (
+                    <tr key={i}>
+                      <td style={s.td}>
+                        <img
+                          src={book.image}
+                          alt={book.title}
+                          style={{ width: '64px', borderRadius: '6px', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}
+                          loading="lazy"
+                        />
+                      </td>
+                      <td style={s.td}>
+                        <a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.bookTitle}>
+                          {book.title}
+                        </a>
+                      </td>
+                      <td style={s.td}>{book.author}</td>
+                      <td style={s.td}>
+                        <span style={s.stars}>{getStars(book.rating)}</span>
+                        <span style={{ marginLeft: '0.6rem', color: '#555' }}>{book.rating}</span>
+                      </td>
+                      <td style={s.td}>
+                        <span style={s.shelfTag}>{book.shelf}</span>
+                      </td>
+                      <td style={s.td}>
+                        <div style={s.price}>{book.price}</div>
+                        <a href={book.amazon_link} target="_blank" rel="noopener noreferrer" style={s.viewLink}>
+                          Amazon
+                        </a>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
